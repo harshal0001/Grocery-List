@@ -34,6 +34,15 @@ class _GroceryListState extends State<GroceryList> {
         _error = "Failed to fetch data. Please try again later";
       });
     }
+    // TODO For Firebase, response.body where body is String so we have to return a String i.e. instead of
+    //      response.body == null, we have to write response.body == 'null'. This thing is backend specific
+    //      it differs from backend to backend
+    if (response.body == 'null') {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
 
     final Map<String, dynamic> data = json.decode(response.body);
     final List<GroceryItem> loadedItems = [];
