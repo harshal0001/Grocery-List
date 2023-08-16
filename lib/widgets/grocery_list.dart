@@ -27,43 +27,49 @@ class _GroceryListState extends State<GroceryList> {
   void _loadItems() async {
     final url = Uri.https(
         'grocery-59699-default-rtdb.firebaseio.com', 'grocery-list.json');
-    final response = await http.get(url);
 
-    if (response.statusCode >= 400) {
+    try {
+      final response = await http.get(url);
+      if (response.statusCode >= 400) {
+        setState(() {
+          _error = "Failed to fetch data. Please try again later";
+        });
+      }
+      // TODO For Firebase, response.body where body is String so we have to return a String i.e. instead of
+      //      response.body == null, we have to write response.body == 'null'. This thing is backend specific
+      //      it differs from backend to backend
+      if (response.body == 'null') {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final Map<String, dynamic> data = json.decode(response.body);
+      final List<GroceryItem> loadedItems = [];
+      for (final item in data.entries) {
+        final category = categories.entries
+            .firstWhere((categoryItem) =>
+                categoryItem.value.title == item.value['category'])
+            .value;
+        loadedItems.add(
+          GroceryItem(
+            id: item.key,
+            name: item.value['name'],
+            quantity: item.value['quantity'],
+            category: category,
+          ),
+        );
+      }
       setState(() {
-        _error = "Failed to fetch data. Please try again later";
-      });
-    }
-    // TODO For Firebase, response.body where body is String so we have to return a String i.e. instead of
-    //      response.body == null, we have to write response.body == 'null'. This thing is backend specific
-    //      it differs from backend to backend
-    if (response.body == 'null') {
-      setState(() {
+        _groceryitems = loadedItems;
         _isLoading = false;
       });
-      return;
+    } catch (e) {
+      setState(() {
+        _error = "Something went wrong!. Please try again later.";
+      });
     }
-
-    final Map<String, dynamic> data = json.decode(response.body);
-    final List<GroceryItem> loadedItems = [];
-    for (final item in data.entries) {
-      final category = categories.entries
-          .firstWhere((categoryItem) =>
-              categoryItem.value.title == item.value['category'])
-          .value;
-      loadedItems.add(
-        GroceryItem(
-          id: item.key,
-          name: item.value['name'],
-          quantity: item.value['quantity'],
-          category: category,
-        ),
-      );
-    }
-    setState(() {
-      _groceryitems = loadedItems;
-      _isLoading = false;
-    });
   }
 
   void _addItem() async {
